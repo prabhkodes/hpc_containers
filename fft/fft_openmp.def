@@ -1,0 +1,33 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%labels
+    Author Prabhkodes
+    Version 1.0
+    Description C environment with OpenMP support
+
+%help
+    This container provides a C build environment with GCC and OpenMP
+    support to compile and run multi-threaded scientific code.
+
+%environment
+    export LC_ALL=C
+    # Default to 4 threads if not specified by the user
+    export OMP_NUM_THREADS=4
+
+%post
+    # System packages
+    # OpenMP is included with build-essential (GCC)
+    apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        wget \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+%runscript
+    echo "OpenMP C FFT container v1.0"
+    exec "$@"
+
+%test
+    # Verify the compiler is available
+    gcc --version
