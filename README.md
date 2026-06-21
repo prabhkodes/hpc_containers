@@ -1,5 +1,13 @@
 # HPC Containers
 
+![C++](https://img.shields.io/badge/C++-00599C?style=flat-square&logo=cplusplus&logoColor=white)
+![C](https://img.shields.io/badge/C-A8B9CC?style=flat-square&logo=c&logoColor=black)
+![CUDA](https://img.shields.io/badge/CUDA-76B900?style=flat-square&logo=nvidia&logoColor=white)
+![OpenACC](https://img.shields.io/badge/OpenACC-FF6200?style=flat-square&logoColor=white)
+![OpenMPI](https://img.shields.io/badge/OpenMPI-364d6e?style=flat-square&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+![Singularity](https://img.shields.io/badge/Singularity-1C2D59?style=flat-square&logoColor=white)
+
 HPC clusters typically restrict software installation and environment modules differ between systems. These projects package the build environment into containers so the same image runs consistently on any cluster that supports Docker or Singularity — no manual dependency setup required.
 
 ## Projects
