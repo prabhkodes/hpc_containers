@@ -1,5 +1,16 @@
 # hpc_containers
 
+![C++](https://img.shields.io/badge/C%2B%2B-00599C?style=flat-square&logo=cplusplus&logoColor=white)
+![C](https://img.shields.io/badge/C-A8B9CC?style=flat-square&logo=c&logoColor=black)
+![MPI](https://img.shields.io/badge/MPI-364d6e?style=flat-square&logoColor=white)
+![OpenACC](https://img.shields.io/badge/OpenACC-FF6200?style=flat-square&logoColor=white)
+![OpenMP](https://img.shields.io/badge/OpenMP-006DB8?style=flat-square&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+![Singularity](https://img.shields.io/badge/Singularity-1C2D59?style=flat-square&logoColor=white)
+![UCX](https://img.shields.io/badge/UCX-5C4EE5?style=flat-square&logoColor=white)
+![Nsight](https://img.shields.io/badge/Nsight-76B900?style=flat-square&logo=nvidia&logoColor=white)
+![SLURM](https://img.shields.io/badge/SLURM-46a2f1?style=flat-square&logoColor=white)
+
 A GPU-offloaded MPI solver has to run on machines you don't administer, where the module stack differs,
 Docker is usually banned, and you have no root. **This is the same solver shipped four different ways**,
 so you can see what each deployment route costs and where each one breaks.
