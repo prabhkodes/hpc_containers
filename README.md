@@ -71,9 +71,17 @@ result.** Compiling with the vendor toolchain alone proves nothing about portabi
 
 2-D Jacobi heat diffusion — GPU-offloaded with OpenACC, distributed with MPI, one GPU per rank.
 
+<p align="center">
+  <img src="jacobi-mpi-openacc/results/jacobi_diffusion.gif" width="520" alt="Jacobi iterations relaxing a hot corner">
+</p>
+
+<p align="center"><sub>The solver being shipped. Stitched from two MPI ranks — useful here as a smoke
+test that a containerised run produces the same field as a native one.</sub></p>
+
 ```
 src/ include/          solver
 input/jacobian.in      grid size, corner value, steps, print interval
+results/               reference animation
 containers/Dockerfile  GCC offload build, cross-built to linux/amd64
 containers/jacobi.def  Singularity recipe (converts the Docker image)
 slurm/                 the four deployment routes above
