@@ -13,9 +13,15 @@
 #SBATCH --output=logs/jacobi_%j.out 
 #SBATCH --error=logs/jacobi_%j.err
 
+# Run from the project root regardless of where sbatch was invoked
+cd "$(dirname "$(realpath "$0")")/.."
+
 mkdir -p logs
 module purge
 module load singularity
+
+# Override with: SIF=/path/to/image.sif sbatch slurm/singularity.sh
+SIF="${SIF:-jacobi.sif}"
 module load openmpi/4.1.6--gcc--12.2.0-cuda-12.1
 
 # These must match the internal structure of your .sif file
@@ -42,7 +48,7 @@ echo "------------------------------------------------------------"
 
 srun --mpi=pmi2 \
      singularity exec --nv --cleanenv \
-     jacobi_new.sif /app/app.x jacobian.in
+     "${SIF:-jacobi.sif}" /app/app.x /app/input/jacobian.in
 
 echo "------------------------------------------------------------"
 echo "Job finished on: $(date)"

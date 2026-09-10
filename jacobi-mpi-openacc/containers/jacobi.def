@@ -1,0 +1,28 @@
+Bootstrap: docker-daemon
+From: jacobi_gpu:latest
+
+# Build the Docker image first, then convert:
+#   docker build -t jacobi_gpu -f containers/Dockerfile .
+#   singularity build jacobi.sif containers/jacobi.def
+#
+# On a machine without Docker, build straight from a saved archive instead:
+#   docker save jacobi_gpu:latest -o jacobi_gpu.tar
+#   singularity build jacobi.sif docker-archive://jacobi_gpu.tar
+
+%labels
+    Description  MPI + OpenACC Jacobi solver, GCC offload to sm_80
+    Toolchain    Ubuntu 22.04, GCC 12 with gcc-12-offload-nvptx, OpenMPI + UCX + PMIx
+
+%help
+    Containerised 2-D Jacobi solver, GPU-offloaded with OpenACC and distributed with MPI.
+    The host MPI must be ABI-compatible with the container's OpenMPI, and the runtime
+    needs the InfiniBand and UCX paths injected -- see slurm/singularity.sh.
+
+%environment
+    export LC_ALL=C
+
+%runscript
+    exec /app/app.x "$@"
+
+%test
+    /app/app.x --help 2>/dev/null || echo "binary present at /app/app.x"

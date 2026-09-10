@@ -11,14 +11,15 @@
 #SBATCH --output=logs/jacobi_%j.out 
 #SBATCH --error=logs/jacobi_%j.err
 
+# Run from the project root regardless of where sbatch was invoked
+cd "$(dirname "$(realpath "$0")")/.."
+
 mkdir -p logs
 module purge
-
 
 module load gcc/12.2.0
 module load nvhpc/24.5
 module load openmpi/4.1.6--gcc--12.2.0-cuda-12.1
-
 
 REAL_NV_ROOT="/leonardo/prod/spack/06/install/0.22/linux-rhel8-icelake/gcc-8.5.0/nvhpc-24.5-torlmnyzcexnrs6pq4cccabv7ehkv3xy/Linux_x86_64/24.5"
 REAL_MPI_ROOT="$REAL_NV_ROOT/comm_libs/12.4/hpcx/hpcx-2.19/ompi"
@@ -28,7 +29,6 @@ export OPAL_PREFIX="$REAL_MPI_ROOT"
 export LD_LIBRARY_PATH="$REAL_MPI_ROOT/lib:$REAL_UCX_ROOT/lib:$LD_LIBRARY_PATH"
 export PATH="$REAL_MPI_ROOT/bin:$PATH"
 
-
 export OMPI_MCA_pml=ucx
 export OMPI_MCA_btl=^openib,tcp
 export UCX_NET_DEVICES="mlx5_0:1"
@@ -36,7 +36,6 @@ export UCX_TLS="self,sm,rc,cuda_copy,cuda_ipc"
 
 export OMPI_MCA_coll_hcoll_enable=0
 export HCOLL_ENABLE_MCAST=0
-
 
 export OMPI_CXX=nvc++
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
@@ -56,4 +55,4 @@ fi
 
 echo "[RUN] Launching with srun --mpi=pmix"
 
-srun --mpi=pmix ./app.x "./jacobian.in"
+srun --mpi=pmix ./app.x "./input/jacobian.in"

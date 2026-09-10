@@ -11,7 +11,11 @@
 #SBATCH --account=ICT25_MHPC_0
 #SBATCH --output=logs/jacobi_%x_%j.out 
 #SBATCH --error=logs/jacobi_%x_%j.err
+
 ##SBATCH --qos=boost_qos_dbg
+
+# Run from the project root regardless of where sbatch was invoked
+cd "$(dirname "$(realpath "$0")")/.."
 
 mkdir -p logs
 
@@ -57,7 +61,7 @@ echo "===================================="
 echo " Starting Run at $(date '+%Y-%m-%d %H:%M:%S %Z')"
 echo "===================================="
 
-INFILE="./jacobian.in"
+INFILE="./input/jacobian.in"
 srun ./app.x "$INFILE"
 
 echo "===================================="

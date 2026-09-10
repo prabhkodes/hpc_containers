@@ -1,0 +1,10 @@
+logs/
+*.sif
+*.tar
+*.x
+*.o
+app.x
+*.nsys-rep
+*.sqlite
+files/
+.DS_Store
