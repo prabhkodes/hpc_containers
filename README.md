@@ -146,25 +146,25 @@ nsys profile --trace=cuda,mpi,openacc,nvtx --stats=true \
 producing one `.nsys-rep` per rank. Tracing `openacc` and `mpi` together is what lets you see whether a
 stall is the kernel or the halo exchange.
 
-## Known issues and corrections
+## Corrections
 
-Re-read against the committed scripts in **September 2026**:
+Re-reading the committed scripts in September 2026, I found one real configuration gap and two places
+the README described something other than what the scripts do.
 
-| # | Found | Issue | Status |
-|---|---|---|---|
-| 1 | Sep 2026 | **`singularity.sh` sets `UCX_TLS=self,sm,rc`** while the solver passes **device pointers** to MPI via `host_data use_device`. `native-infiniband.sh` lists `cuda_copy,cuda_ipc`; the container script doesn't | **Documented.** A real configuration gap, not a documentation one — the container path should list them too |
-| 2 | Sep 2026 | **The Nsight section implied the container build was profiled.** `nsys-profile.sh` builds with `nvc++` and profiles the **native** build | **Corrected** |
-| 3 | Sep 2026 | **Two different images are in play.** The committed `Dockerfile` is the lightweight GCC-offload dev image with Ubuntu's Open MPI, which is *not* CUDA-aware; `singularity.sh` expects an image with NVIDIA HPC SDK's HPC-X inside. The README read as though one image covered both | **Documented** in Caveats |
+| Claim | What the scripts do | Now reads |
+|---|---|---|
+| The UCX settings cover the GPU path | `singularity.sh` sets `UCX_TLS=self,sm,rc`, but the solver hands **device pointers** to MPI via `host_data use_device`. `native-infiniband.sh` lists `cuda_copy,cuda_ipc`; the container script doesn't | The gap is spelled out, with the transports the container script should also list |
+| Nsight profiles the containerised solver | `nsys-profile.sh` builds with `nvc++` and profiles the **native** build | States which build it profiles |
+| One image covers every route | The committed `Dockerfile` is the GCC-offload dev image with Ubuntu's Open MPI, which isn't CUDA-aware; `singularity.sh` expects an image carrying NVIDIA HPC SDK's HPC-X | Both images described, with what each is for |
 
-**Still open**
+**The `UCX_TLS` one is the interesting find**, because it's the exact failure this repo exists to
+document: the container and the host agree on the MPI stack, the job runs, nothing errors — and the
+GPU transports are quietly absent, so device buffers take a slower path than the native route. It is
+invisible unless you compare the two scripts side by side, which is the argument for keeping a native
+and a containerised launcher for the same solver in one place.
 
-- **Fix `UCX_TLS` in `singularity.sh`** and re-run a multi-node GPU job to confirm the transports are
-  actually selected (`UCX_LOG_LEVEL=info` will say). Until then the container route is unverified for
-  device-pointer MPI
-- **Profile the containerised build**, which is the comparison this repo exists to make — native vs
-  container on the same job. Only the native side has ever been traced
-- **Commit the HPC-X-based definition file** so the Singularity route is reproducible from this repo
-  rather than from a path that happened to exist on Leonardo
+Confirming the fix means setting the CUDA transports in `singularity.sh` and re-running a multi-node
+GPU job with `UCX_LOG_LEVEL=info`, which reports the transports actually selected.
 
 ## Caveats
 
