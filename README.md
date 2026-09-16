@@ -19,7 +19,7 @@ so you can see what each deployment route costs and where each one breaks.
 |---|---|---|
 | [`slurm/native.sh`](jacobi-mpi-openacc/slurm/native.sh) | NVHPC `nvc++ -acc -gpu=cc80` + hpcx-mpi modules | The cluster has the modules you need. The normal path |
 | [`slurm/native-infiniband.sh`](jacobi-mpi-openacc/slurm/native-infiniband.sh) | Same, with `OPAL_PREFIX` / UCX forced by hand | The module-provided MPI picks the wrong transport and multi-node jobs hang |
-| [`slurm/singularity.sh`](jacobi-mpi-openacc/slurm/singularity.sh) | Container image, MPI paths injected via `SINGULARITYENV_*` | The cluster forbids Docker, or you need a frozen environment |
+| [`slurm/singularity.sh`](jacobi-mpi-openacc/slurm/singularity.sh) | Container image with NVIDIA HPC SDK's HPC-X inside, MPI paths injected via `SINGULARITYENV_*` | The cluster forbids Docker, or you need a frozen environment |
 | [`containers/Dockerfile`](jacobi-mpi-openacc/containers/Dockerfile) | GCC 12 `-fopenacc -foffload=-march=sm_80` | Local development on a laptop with no GPU and no cluster |
 
 **What this repo demonstrates**
@@ -29,7 +29,8 @@ so you can see what each deployment route costs and where each one breaks.
 - **Cross-architecture image builds** — the container is built on macOS/arm64 and targets
   `linux/amd64` with `sm_80` device code.
 - **MPI over InfiniBand from inside a container**, which is the part that actually breaks.
-- **Profiling survives containerisation** — Nsight Systems traces CUDA, MPI, OpenACC and NVTX per rank.
+- **Nsight Systems profiling of the MPI + OpenACC solver** — the profiling script traces CUDA, MPI,
+  OpenACC and NVTX per rank (it profiles the native build).
 
 **Stack:** C++20 · C · MPI (OpenMPI / HPC-X) · OpenACC · OpenMP · UCX · PMIx · Docker · Singularity ·
 Nsight Systems · SLURM
@@ -37,7 +38,7 @@ Nsight Systems · SLURM
 **Where it ran:** Leonardo Booster at CINECA — 4× A100 64 GB per node, Mellanox HDR InfiniBand.
 
 > **Related:** [`jacobi-poisson-solver`](https://github.com/prabhkodes/jacobi-poisson-solver) has the
-> same Jacobi solver, but asks a different question — how four *parallel models* compare, and how they
+> same Jacobi solver, but asks a different question — how the *parallel models* compare, and how they
 > scale to 1120 cores and 40 GPUs. This repo is about **deployment and portability**, not performance.
 
 ## The hard part: MPI over InfiniBand inside a container
@@ -54,14 +55,14 @@ The fix is to make the container use its *own* HPC-X and UCX, and to force the t
 | `OMPI_MCA_pml` | `ucx` | Use UCX for point-to-point, not the legacy BTL path |
 | `OMPI_MCA_btl` | `^openib,tcp` | Explicitly *exclude* the fallbacks so a misconfiguration fails loudly instead of running slowly |
 | `UCX_NET_DEVICES` | `mlx5_0:1` | Pin to the actual InfiniBand HCA rather than letting UCX guess |
-| `UCX_TLS` | `self,sm,rc` (+ `cuda_copy,cuda_ipc` natively) | Shared memory on-node, reliable-connection IB off-node, CUDA transports for device buffers |
+| `UCX_TLS` | `self,sm,rc` in `singularity.sh`; `self,sm,rc,cuda_copy,cuda_ipc` in `native-infiniband.sh` | Shared memory on-node, reliable-connection IB off-node. The solver hands **device pointers** to MPI, so GPU buffers also need the CUDA transports — the container script should list them too |
 | `OMPI_MCA_coll_hcoll_enable` | `0` | HCOLL collectives were a source of hangs here; disabled |
 
 Launch with `srun --mpi=pmi2` and `singularity exec --nv` — PMI2 for process management, `--nv` to
 inject the host NVIDIA driver stack into the container.
 
-→ **`native-infiniband.sh` applies exactly the same overrides without a container**, which is what
-makes the pair useful: it isolates whether a problem is the container or the MPI configuration.
+→ **`native-infiniband.sh` applies the same overrides without a container**, which is what makes the
+pair useful: it isolates whether a problem is the container or the MPI configuration.
 
 ## Two OpenACC toolchains, one source
 
@@ -134,7 +135,8 @@ OMP_NUM_THREADS=4 ./fft.x 1024
 
 ## Profiling inside the toolchain
 
-[`slurm/nsys-profile.sh`](jacobi-mpi-openacc/slurm/nsys-profile.sh) wraps the run in
+[`slurm/nsys-profile.sh`](jacobi-mpi-openacc/slurm/nsys-profile.sh) builds the solver natively with
+`nvc++` and wraps the run in
 
 ```bash
 nsys profile --trace=cuda,mpi,openacc,nvtx --stats=true \
@@ -149,8 +151,9 @@ stall is the kernel or the halo exchange.
 | Caveat | Detail |
 |---|---|
 | **No scaling numbers here** | This repo is about deployment, not performance. Scaling for the same solver is in [`jacobi-poisson-solver`](https://github.com/prabhkodes/jacobi-poisson-solver) |
+| **Two different images** | The committed Dockerfile is the lightweight GCC-offload development image, with Ubuntu's Open MPI, which isn't CUDA-aware. `singularity.sh` expects an image containing NVIDIA HPC SDK's HPC-X at the path set in the script |
 | **Paths are Leonardo-specific** | `native-infiniband.sh` hardcodes a Spack install prefix, and the Singularity script hardcodes the HPC-X layout inside the image. Both need editing for another site |
-| **`.sif` is not committed** | Container images are too large for git. Build it from the Dockerfile via [`containers/jacobi.def`](jacobi-mpi-openacc/containers/jacobi.def) |
+| **`.sif` is not committed** | Container images are too large for git. `containers/jacobi.def` converts the Docker image; for multi-node GPU runs, build from an image that contains HPC-X |
 | **Host/container MPI must be ABI-compatible** | The usual containerised-MPI constraint. Both sides here are OpenMPI-derived |
 | **GCC offload is the lighter path, not the faster one** | It keeps the image small and dependency-free; NVHPC generally generates better device code |
 
